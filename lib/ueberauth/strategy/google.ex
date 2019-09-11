@@ -51,7 +51,9 @@ defmodule Ueberauth.Strategy.Google do
     client = Ueberauth.Strategy.Google.OAuth.client
     case verify_token(conn, client, id_token) do
       {:ok, user} ->
-        put_user(conn, user)
+        conn
+        |> put_private(:google_token, OAuth2.AccessToken.new(id_token))
+        |> put_private(:google_user, user)
       {:error, reason} ->
         set_errors!(conn, [error("token", reason)])
     end
@@ -146,12 +148,6 @@ defmodule Ueberauth.Strategy.Google do
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
-  end
-
-  defp put_user(conn, user) do
-    token = %OAuth2.AccessToken{}
-    conn = put_private(conn, :google_token, token)
-    put_private(conn, :google_user, user)
   end
 
   defp with_param(opts, key, conn) do
