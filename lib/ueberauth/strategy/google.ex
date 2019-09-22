@@ -167,17 +167,22 @@ defmodule Ueberauth.Strategy.Google do
     params = %{"id_token" => id_token}
     resp = OAuth2.Client.get(client, url, [], params: params)
 
+    allowed_client_ids =
+      if is_binary(@allowed_client_ids),
+        do: String.split(@allowed_client_ids, ","),
+        else: @allowed_client_ids || []
+
     case resp do
       {:ok, %OAuth2.Response{status_code: 200,
         body: %{"aud" => aud} = body
       }} ->
-        if Enum.member?(@allowed_client_ids, aud) do
+        if Enum.member?(allowed_client_ids, aud) do
           {:ok, body}
         else
-          {:error, "Unknown client id #{aud}"}
+          {:error, "Unknown client id #{aud}, allowed client ids are #{inspect @allowed_client_ids}"}
         end
-      _ ->
-        {:error, "Token verification failed"}
+    resp ->
+      {:error, "Token verification failed"}
     end
   end
 end

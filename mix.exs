@@ -31,6 +31,7 @@ defmodule UeberauthGoogle.Mixfile do
      {:credo, "~> 0.5", only: [:dev, :test]},
      {:earmark, ">= 0.0.0", only: :dev},
      {:ex_doc, "~> 0.3", only: :dev},
+     {:jason, "~> 1.0"}
     ]
   end
 

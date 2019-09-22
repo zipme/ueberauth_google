@@ -32,7 +32,7 @@ defmodule Ueberauth.Strategy.Google.OAuth do
       |> Keyword.merge(config)
       |> Keyword.merge(opts)
 
-    OAuth2.Client.new(opts)
+    OAuth2.Client.new(opts) |> put_serializer("application/json", Jason)
   end
 
   @doc """
