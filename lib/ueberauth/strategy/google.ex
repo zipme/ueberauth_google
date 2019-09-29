@@ -162,26 +162,29 @@ defmodule Ueberauth.Strategy.Google do
     Keyword.get(options(conn), key, Keyword.get(default_options(), key))
   end
 
-  def verify_token(conn, client, id_token) do
-    url = Ueberauth.Strategy.Google.OAuth.config()[:token_info_url]
+  defp verify_token(conn, client, id_token) do
+    config = Ueberauth.Strategy.Google.OAuth.config()
+    allowed_client_ids = config[:allowed_client_ids]
+    url = config[:token_info_url]
     params = %{"id_token" => id_token}
     resp = OAuth2.Client.get(client, url, [], params: params)
 
-    allowed_client_ids =
-      if is_binary(@allowed_client_ids),
-        do: String.split(@allowed_client_ids, ","),
-        else: @allowed_client_ids || []
+    normalized_allowed_client_ids =
+      if is_binary(allowed_client_ids),
+        do: String.split(allowed_client_ids, ","),
+        else: allowed_client_ids || []
 
     case resp do
       {:ok, %OAuth2.Response{status_code: 200,
         body: %{"aud" => aud} = body
       }} ->
-        if Enum.member?(allowed_client_ids, aud) do
+        if Enum.member?(normalized_allowed_client_ids, aud) do
           {:ok, body}
         else
-          {:error, "Unknown client id #{aud}, allowed client ids are #{inspect @allowed_client_ids}"}
+          {:error, "Unknown client id #{aud}, allowed client ids are #{inspect allowed_client_ids}"}
         end
     resp ->
+      IO.inspect resp
       {:error, "Token verification failed"}
     end
   end
