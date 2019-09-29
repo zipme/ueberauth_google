@@ -137,7 +137,7 @@ defmodule Ueberauth.Strategy.Google do
     conn = put_private(conn, :google_token, token)
 
     # userinfo_endpoint from https://accounts.google.com/.well-known/openid-configuration
-    path = "https://www.googleapis.com/oauth2/v3/userinfo"
+    path = Ueberauth.Strategy.Google.OAuth.config()[:fetch_user_url]
     resp = Ueberauth.Strategy.Google.OAuth.get(token, path)
 
     case resp do
@@ -163,7 +163,7 @@ defmodule Ueberauth.Strategy.Google do
   end
 
   def verify_token(conn, client, id_token) do
-    url = "https://www.googleapis.com/oauth2/v3/tokeninfo"
+    url = Ueberauth.Strategy.Google.OAuth.config()[:token_info_url]
     params = %{"id_token" => id_token}
     resp = OAuth2.Client.get(client, url, [], params: params)
 

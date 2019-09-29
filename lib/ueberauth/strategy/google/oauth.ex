@@ -14,7 +14,9 @@ defmodule Ueberauth.Strategy.Google.OAuth do
      strategy: __MODULE__,
      site: "https://accounts.google.com",
      authorize_url: "/o/oauth2/v2/auth",
-     token_url: "https://www.googleapis.com/oauth2/v4/token"
+     token_url: "https://www.googleapis.com/oauth2/v4/token",
+     token_info_url: "https://www.googleapis.com/oauth2/v3/tokeninfo",
+     fetch_user_url: "https://www.googleapis.com/oauth2/v3/userinfo"
    ]
 
   @doc """
@@ -25,14 +27,16 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   These options are only useful for usage outside the normal callback phase of Ueberauth.
   """
   def client(opts \\ []) do
+    OAuth2.Client.new(config(opts))
+    |> put_serializer("application/json", Jason)
+  end
+
+  def config(opts \\ []) do
     config = Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)
 
-    opts =
-      @defaults
-      |> Keyword.merge(config)
-      |> Keyword.merge(opts)
-
-    OAuth2.Client.new(opts) |> put_serializer("application/json", Jason)
+    @defaults
+    |> Keyword.merge(config)
+    |> Keyword.merge(opts)
   end
 
   @doc """
