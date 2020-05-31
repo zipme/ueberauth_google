@@ -11,13 +11,13 @@ defmodule Ueberauth.Strategy.Google.OAuth do
   use OAuth2.Strategy
 
   @defaults [
-     strategy: __MODULE__,
-     site: "https://accounts.google.com",
-     authorize_url: "/o/oauth2/v2/auth",
-     token_url: "https://www.googleapis.com/oauth2/v4/token",
-     token_info_url: "https://www.googleapis.com/oauth2/v3/tokeninfo",
-     fetch_user_url: "https://www.googleapis.com/oauth2/v3/userinfo"
-   ]
+    strategy: __MODULE__,
+    site: "https://accounts.google.com",
+    authorize_url: "/o/oauth2/v2/auth",
+    token_url: "https://www.googleapis.com/oauth2/v4/token",
+    token_info_url: "https://www.googleapis.com/oauth2/v3/tokeninfo",
+    fetch_user_url: "https://www.googleapis.com/oauth2/v3/userinfo"
+  ]
 
   @doc """
   Construct a client for requests to Google.
@@ -52,14 +52,21 @@ defmodule Ueberauth.Strategy.Google.OAuth do
     [token: token]
     |> client
     |> put_param("client_secret", client().client_secret)
-    |> OAuth2.Client.get(url, headers, opts)
+    |> OAuth2.Client.get(
+      url,
+      headers,
+      opts ++ [ssl_options: [verify: :verify_none, cacertfile: :certifi.cacertfile()]]
+    )
   end
 
   def get_token!(params \\ [], opts \\ []) do
     client =
       opts
       |> client
-      |> OAuth2.Client.get_token!(params)
+      |> OAuth2.Client.get_token!(params, [],
+        ssl_options: [verify: :verify_none, cacertfile: :certifi.cacertfile()]
+      )
+
     client.token
   end
 

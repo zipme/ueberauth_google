@@ -9,7 +9,9 @@ defmodule Ueberauth.Strategy.Google do
   alias Ueberauth.Auth.Credentials
   alias Ueberauth.Auth.Extra
 
-  @allowed_client_ids Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[:allowed_client_ids]
+  @allowed_client_ids Application.get_env(:ueberauth, Ueberauth.Strategy.Google.OAuth)[
+                        :allowed_client_ids
+                      ]
 
   @doc """
   Handles initial request for Google authentication.
@@ -38,7 +40,9 @@ defmodule Ueberauth.Strategy.Google do
     token = Ueberauth.Strategy.Google.OAuth.get_token!([code: code], opts)
 
     if token.access_token == nil do
-      set_errors!(conn, [error(token.other_params["error"], token.other_params["error_description"])])
+      set_errors!(conn, [
+        error(token.other_params["error"], token.other_params["error_description"])
+      ])
     else
       fetch_user(conn, token)
     end
@@ -48,12 +52,14 @@ defmodule Ueberauth.Strategy.Google do
   Handles the callback from app.
   """
   def handle_callback!(%Plug.Conn{params: %{"id_token" => id_token}} = conn) do
-    client = Ueberauth.Strategy.Google.OAuth.client
+    client = Ueberauth.Strategy.Google.OAuth.client()
+
     case verify_token(conn, client, id_token) do
       {:ok, user} ->
         conn
         |> put_private(:google_token, OAuth2.AccessToken.new(id_token))
         |> put_private(:google_user, user)
+
       {:error, reason} ->
         set_errors!(conn, [error("token", reason)])
     end
@@ -87,9 +93,9 @@ defmodule Ueberauth.Strategy.Google do
   Includes the credentials from the google response.
   """
   def credentials(conn) do
-    token        = conn.private.google_token
-    scope_string = (token.other_params["scope"] || "")
-    scopes       = String.split(scope_string, ",")
+    token = conn.private.google_token
+    scope_string = token.other_params["scope"] || ""
+    scopes = String.split(scope_string, ",")
 
     %Credentials{
       expires: !!token.expires_at,
@@ -132,7 +138,6 @@ defmodule Ueberauth.Strategy.Google do
     }
   end
 
-
   defp fetch_user(conn, token) do
     conn = put_private(conn, :google_token, token)
 
@@ -143,8 +148,11 @@ defmodule Ueberauth.Strategy.Google do
     case resp do
       {:ok, %OAuth2.Response{status_code: 401, body: _body}} ->
         set_errors!(conn, [error("token", "unauthorized")])
-      {:ok, %OAuth2.Response{status_code: status_code, body: user}} when status_code in 200..399 ->
+
+      {:ok, %OAuth2.Response{status_code: status_code, body: user}}
+      when status_code in 200..399 ->
         put_private(conn, :google_user, user)
+
       {:error, %OAuth2.Error{reason: reason}} ->
         set_errors!(conn, [error("OAuth2", reason)])
     end
@@ -167,7 +175,12 @@ defmodule Ueberauth.Strategy.Google do
     allowed_client_ids = config[:allowed_client_ids]
     url = config[:token_info_url]
     params = %{"id_token" => id_token}
-    resp = OAuth2.Client.get(client, url, [], params: params)
+
+    resp =
+      OAuth2.Client.get(client, url, [],
+        params: params,
+        ssl_options: [verify: :verify_none, cacertfile: :certifi.cacertfile()]
+      )
 
     normalized_allowed_client_ids =
       if is_binary(allowed_client_ids),
@@ -175,17 +188,17 @@ defmodule Ueberauth.Strategy.Google do
         else: allowed_client_ids || []
 
     case resp do
-      {:ok, %OAuth2.Response{status_code: 200,
-        body: %{"aud" => aud} = body
-      }} ->
+      {:ok, %OAuth2.Response{status_code: 200, body: %{"aud" => aud} = body}} ->
         if Enum.member?(normalized_allowed_client_ids, aud) do
           {:ok, body}
         else
-          {:error, "Unknown client id #{aud}, allowed client ids are #{inspect allowed_client_ids}"}
+          {:error,
+           "Unknown client id #{aud}, allowed client ids are #{inspect(allowed_client_ids)}"}
         end
-    resp ->
-      IO.inspect resp
-      {:error, "Token verification failed"}
+
+      resp ->
+        IO.inspect(resp)
+        {:error, "Token verification failed"}
     end
   end
 end

@@ -25,7 +25,7 @@ defmodule UeberauthGoogle.Mixfile do
 
   defp deps do
     [
-     {:oauth2, "~> 0.8"},
+     {:oauth2, "~> 0.9.4"},
      {:ueberauth, "~> 0.4"},
 
      {:credo, "~> 0.5", only: [:dev, :test]},
